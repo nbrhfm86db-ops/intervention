@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Import Clients — Interventions</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1b4332;--green-mid:#2d6a4f;--green-light:#52b788;--green-pale:#d8f3dc;
+  --amber:#f59e0b;--amber-light:#fff8e1;--red:#e63946;--red-light:#fff0f0;
+  --blue-light:#e8f0fe;--blue:#1a56db;
+  --gray-100:#f1f3f5;--gray-200:#e9ecef;--gray-300:#dee2e6;
+  --gray-400:#adb5bd;--gray-600:#6c757d;--gray-700:#495057;--gray-800:#343a40;
+  --r:12px;--shadow:0 2px 8px rgba(0,0,0,0.10);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-100);color:var(--gray-800);min-height:100vh}
+header{background:var(--green);color:#fff;padding:22px 32px}
+header h1{font-size:22px;font-weight:700;margin-bottom:3px}
+header p{font-size:14px;opacity:.65}
+.container{max-width:860px;margin:0 auto;padding:32px 24px}
+
+.status-banner{border-radius:var(--r);padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow)}
+.status-banner.empty{background:#fff;border:2px dashed var(--gray-300)}
+.status-banner.has-clients{background:var(--green-pale);border:1.5px solid var(--green-light)}
+.status-icon{font-size:32px;flex-shrink:0}
+.status-title{font-size:16px;font-weight:700;margin-bottom:3px}
+.status-sub{font-size:13px;color:var(--gray-600)}
+.status-banner.has-clients .status-sub{color:var(--green-mid)}
+
+.card{background:#fff;border-radius:var(--r);padding:22px 24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px}
+
+.drop-zone{border:2.5px dashed var(--gray-300);border-radius:var(--r);padding:44px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-100)}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--green-light);background:var(--green-pale)}
+.drop-icon{font-size:44px;margin-bottom:10px}
+.drop-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.drop-sub{font-size:14px;color:var(--gray-400);margin-bottom:14px}
+.drop-formats{display:flex;gap:8px;justify-content:center}
+.fmt-pill{background:#fff;border:1.5px solid var(--gray-200);color:var(--gray-600);padding:4px 13px;border-radius:20px;font-size:13px;font-weight:600}
+#file-inp{display:none}
+
+.fmt-tag{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700}
+.fmt-urssaf{background:#fff3cd;color:#856404}
+.fmt-gestion{background:#cfe2ff;color:#084298}
+.fmt-generic{background:var(--gray-100);color:var(--gray-700)}
+
+.import-summary{background:var(--gray-100);border-radius:10px;padding:18px;margin-bottom:18px}
+.summary-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--gray-200);font-size:14px}
+.summary-row:last-child{border-bottom:none}
+.summary-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.summary-label{flex:1;color:var(--gray-600)}
+.summary-val{font-weight:700;font-size:15px}
+.val-green{color:var(--green-mid)}
+.val-amber{color:#856404}
+
+.table-wrap{overflow-x:auto;border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:12px}
+.preview-table{width:100%;border-collapse:collapse;font-size:13px}
+.preview-table th{background:var(--green);color:#fff;padding:10px 12px;text-align:left;font-weight:600;white-space:nowrap}
+.preview-table td{padding:9px 12px;border-bottom:1px solid var(--gray-100);vertical-align:top;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.preview-table tr:last-child td{border-bottom:none}
+.preview-table tr:hover td{background:var(--green-pale)}
+.tag-ok{background:var(--green-pale);color:var(--green-mid);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700}
+.tag-new{background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700}
+.tag-dup{background:var(--amber-light);color:#856404;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700}
+.tag-empty{background:var(--gray-100);color:var(--gray-400);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border-radius:10px;border:none;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--green-mid);color:#fff;width:100%}
+.btn-primary:hover{background:var(--green)}
+.btn-outline{background:#fff;color:var(--green-mid);border:2px solid var(--green-mid);width:100%}
+.btn-gray{background:var(--gray-100);color:var(--gray-700);border:1.5px solid var(--gray-200)}
+.btn-danger-sm{background:var(--red-light);color:var(--red);border:1.5px solid #fcc;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer}
+.btn-big{padding:17px 24px;font-size:16px}
+.gap{margin-bottom:10px}
+
+.alert{padding:14px 16px;border-radius:10px;font-size:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px;line-height:1.5}
+.alert-success{background:var(--green-pale);color:var(--green)}
+.alert-warn{background:var(--amber-light);color:#664d03}
+.alert-err{background:var(--red-light);color:var(--red)}
+.alert-info{background:var(--blue-light);color:var(--blue)}
+.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+
+.client-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-radius:8px;margin-bottom:6px;font-size:13px;border:1px solid var(--gray-200)}
+.c-avatar{width:34px;height:34px;border-radius:50%;background:var(--green-pale);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--green-mid);flex-shrink:0;text-transform:uppercase}
+.c-name{font-weight:600}
+.c-detail{color:var(--gray-400);font-size:12px;margin-top:1px}
+
+.danger-zone{border:1.5px solid #fcc;border-radius:var(--r);padding:18px;background:var(--red-light)}
+.danger-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+
+.progress{height:5px;background:var(--gray-200);border-radius:3px;overflow:hidden;margin:14px 0 0}
+.progress-bar{height:100%;background:var(--green-mid);transition:width .4s ease;width:0}
+
+.section{display:none}
+.section.show{display:block}
+.divider{height:1px;background:var(--gray-200);margin:18px 0}
+@media(max-width:600px){.container{padding:16px}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 Import Clients — Interventions</h1>
+  <p>Fusionnez vos exports Excel avec la liste existante — zéro doublon à chaque import</p>
+</header>
+
+<div class="container">
+
+  <!-- ÉTAT ACTUEL -->
+  <div class="status-banner" id="status-banner">
+    <div class="status-icon" id="status-icon">📭</div>
+    <div>
+      <div class="status-title" id="status-title">Aucun client enregistré</div>
+      <div class="status-sub" id="status-sub">Importez votre premier fichier pour commencer</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1 : UPLOAD -->
+  <div class="section show" id="sec-upload">
+    <div class="card">
+      <div class="card-title">Charger un fichier Excel ou CSV</div>
+      <div class="drop-zone" id="drop-zone"
+           onclick="document.getElementById('file-inp').click()"
+           ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+        <div class="drop-icon">📂</div>
+        <div class="drop-title">Glissez votre fichier ici ou cliquez pour parcourir</div>
+        <div class="drop-sub">Répétez l'opération à chaque nouvel export — les doublons sont gérés automatiquement</div>
+        <div class="drop-formats">
+          <span class="fmt-pill">.xlsx</span>
+          <span class="fmt-pill">.xls</span>
+          <span class="fmt-pill">.csv</span>
+        </div>
+      </div>
+      <input type="file" id="file-inp" accept=".xlsx,.xls,.csv" onchange="handleFile(this.files[0])">
+      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Formats reconnus automatiquement</div>
+      <div style="font-size:14px;color:var(--gray-600);line-height:2">
+        <div>📋 <strong>Export URSSAF</strong> — Prénom, Nom, Email, Téléphone, Adresse de facturation, CP, Ville</div>
+        <div>🖥 <strong>Logiciel de gestion</strong> — N° client, Prénom, Nom, Mobile, E-mail, Adresse fiscale, CP, Ville</div>
+        <div>📄 <strong>Format générique</strong> — Tout fichier contenant des colonnes Nom + Email ou Téléphone</div>
+      </div>
+    </div>
+
+    <div id="existing-section" style="display:none">
+      <div class="card">
+        <div class="card-title">Clients actuellement enregistrés</div>
+        <div id="existing-list"></div>
+        <div class="divider"></div>
+        <div class="danger-zone">
+          <div class="danger-title">⚠️ Zone dangereuse</div>
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px">Effacer définitivement toute la liste. Action irréversible.</p>
+          <button class="btn-danger-sm" onclick="clearAll()">🗑 Effacer toute la liste</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 : APERÇU -->
+  <div class="section" id="sec-preview">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+        <div>
+          <span id="fmt-tag-display"></span>
+          <span style="font-size:13px;color:var(--gray-600);margin-left:8px" id="file-name-display"></span>
+        </div>
+        <button class="btn btn-gray" style="width:auto" onclick="resetUpload()">← Changer de fichier</button>
+      </div>
+      <div class="import-summary" id="import-summary"></div>
+      <div class="card-title" style="margin-bottom:10px">Aperçu des données</div>
+      <div class="table-wrap">
+        <table class="preview-table" id="preview-table"></table>
+      </div>
+      <div style="font-size:12px;color:var(--gray-400);margin-top:8px" id="preview-more"></div>
+    </div>
+    <button class="btn btn-primary btn-big gap" onclick="doImport()">✅ Confirmer l'import</button>
+    <button class="btn btn-outline" onclick="resetUpload()">Annuler</button>
+  </div>
+
+  <!-- SECTION 3 : RÉSULTAT -->
+  <div class="section" id="sec-result">
+    <div class="alert alert-success" id="result-msg">
+      <div class="alert-icon">✅</div>
+      <div id="result-text"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Que faire maintenant ?</div>
+      <p style="font-size:14px;color:var(--gray-600);line-height:1.8">
+        Les clients sont enregistrés dans l'application sur cet appareil.<br>
+        Ouvrez l'app → connectez-vous en <strong>Gérant</strong> → vérifiez l'onglet <strong>Clients</strong>.<br>
+        Vous pouvez importer un autre fichier immédiatement — les doublons seront détectés automatiquement.
+      </p>
+      <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" onclick="importAnother()">📂 Importer un autre fichier</button>
+        <button class="btn btn-outline" onclick="downloadBackup()">📥 Télécharger la sauvegarde JSON</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const STORAGE_KEY = 'clients_v4';
+let parsed = [];
+let currentFileName = '';
+
+// ══════ INIT ══════
+window.addEventListener('DOMContentLoaded', refreshBanner);
+
+function getStored() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; } }
+function setStored(list) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+function refreshBanner() {
+  const list = getStored();
+  const banner = document.getElementById('status-banner');
+  const existSec = document.getElementById('existing-section');
+  if (list.length === 0) {
+    banner.className = 'status-banner empty';
+    document.getElementById('status-icon').textContent = '📭';
+    document.getElementById('status-title').textContent = 'Aucun client enregistré';
+    document.getElementById('status-sub').textContent = 'Importez votre premier fichier pour commencer';
+    existSec.style.display = 'none';
+  } else {
+    banner.className = 'status-banner has-clients';
+    document.getElementById('status-icon').textContent = '✅';
+    document.getElementById('status-title').textContent = `${list.length} client${list.length > 1 ? 's' : ''} enregistré${list.length > 1 ? 's' : ''}`;
+    document.getElementById('status-sub').textContent = 'Chaque nouvel import fusionne intelligemment — zéro doublon garanti';
+    existSec.style.display = 'block';
+    renderExistingList(list);
+  }
+}
+
+function renderExistingList(list) {
+  const el = document.getElementById('existing-list');
+  const preview = list.slice(0, 6);
+  el.innerHTML = preview.map(c => `
+    <div class="client-row">
+      <div class="c-avatar">${esc((c.nom || c.prenom || '?').charAt(0))}</div>
+      <div>
+        <div class="c-name">${esc([c.prenom, c.nom].filter(Boolean).join(' '))}${c.societe ? ` <span style="font-weight:400;color:var(--gray-400)">(${esc(c.societe)})</span>` : ''}</div>
+        <div class="c-detail">${[c.adresse, c.email, c.tel].filter(Boolean).join(' · ') || '—'}</div>
+      </div>
+    </div>`).join('') +
+    (list.length > 6 ? `<div style="font-size:13px;color:var(--gray-400);padding:10px 0">… et ${list.length - 6} autre${list.length - 6 > 1 ? 's' : ''} client${list.length - 6 > 1 ? 's' : ''}</div>` : '');
+}
+
+// ══════ DRAG & DROP ══════
+function dragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); }
+function dragLeave() { document.getElementById('drop-zone').classList.remove('drag'); }
+function dropFile(e) { e.preventDefault(); dragLeave(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }
+
+// ══════ LECTURE ══════
+function handleFile(file) {
+  if (!file) return;
+  currentFileName = file.name;
+  const bar = document.getElementById('progress-bar');
+  bar.style.width = '20%';
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'csv') {
+    const r = new FileReader();
+    r.onload = e => { bar.style.width = '90%'; parseCSV(e.target.result); bar.style.width = '100%'; showPreview(); };
+    r.readAsText(file, 'UTF-8');
+  } else {
+    const r = new FileReader();
+    r.onload = e => {
+      bar.style.width = '60%';
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        bar.style.width = '100%';
+        detectAndParse(rows);
+        showPreview();
+      } catch(err) {
+        bar.style.width = '0';
+        showErr('Impossible de lire ce fichier. Vérifiez qu\'il s\'agit d\'un fichier Excel valide.');
+      }
+    };
+    r.readAsArrayBuffer(file);
+  }
+}
+
+// ══════ DÉTECTION & PARSING ══════
+function detectFormat(cols) {
+  const c = cols.map(x => String(x).toLowerCase());
+  if (c.some(x => x.includes('adresse de facturation'))) return 'urssaf';
+  if (c.some(x => x.includes('n° client') || x.includes('adresse fiscale'))) return 'gestion';
+  if (c.some(x => x.includes('nom')) && c.some(x => x.includes('email') || x.includes('e-mail') || x.includes('mail'))) return 'generic';
+  return 'unknown';
+}
+
+function detectAndParse(rows) {
+  if (!rows.length) { showErr('Le fichier est vide.'); return; }
+  const cols = Object.keys(rows[0]);
+  const fmt = detectFormat(cols);
+  if (fmt === 'urssaf')        parsed = rows.map(parseURSSAF).filter(Boolean);
+  else if (fmt === 'gestion')  parsed = rows.map(parseGestion).filter(Boolean);
+  else                         parsed = rows.map(r => parseGeneric(r, cols)).filter(Boolean);
+  parsed._fmt = fmt;
+}
+
+const cl = v => String(v || '').trim();
+const clTel = v => cl(v).replace(/\s+/g, '').replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+
+function parseURSSAF(r) {
+  const prenom = cl(r['Prénom']), nom = cl(r['Nom']);
+  if (!prenom && !nom) return null;
+  const cp = cl(r['Code postal']), ville = cl(r['Ville']);
+  return { id: uid(), civilite: cl(r['Civilité']), prenom, nom, societe: '',
+    adresse: [cl(r['Adresse de facturation']), cl(r['Complément']), [cp, ville].filter(Boolean).join(' ')].filter(Boolean).join(', '),
+    email: cl(r['Email']), tel: clTel(r['Téléphone']) };
+}
+
+function parseGestion(r) {
+  const prenom = cl(r['Prénom']), nom = cl(r['Nom']);
+  if (!prenom && !nom) return null;
+  const rue = cl(r['Adresse fiscale : Adresse'] || r['Adresse postale : Adresse'] || '');
+  const suite = cl(r['Adresse fiscale : Adresse (suite)'] || r['Adresse postale : Adresse (suite)'] || '');
+  const cp = cl(r['Adresse fiscale : Code postal'] || r['Adresse postale : Code postal'] || '');
+  const ville = cl(r['Adresse fiscale : Ville'] || r['Adresse postale : Ville'] || '');
+  return { id: uid(), civilite: cl(r['Civilité']), prenom, nom, societe: '',
+    adresse: [rue, suite, [cp, ville].filter(Boolean).join(' ')].filter(Boolean).join(', '),
+    email: cl(r['E-mail'] || r['Email'] || ''), tel: clTel(r['Mobile'] || r['Téléphone'] || r['Mobile pro'] || '') };
+}
+
+function parseGeneric(r, cols) {
+  const cmap = {};
+  cols.forEach(c => { cmap[c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'')] = c; });
+  const prenom = cl(r[cmap['prenom'] || cmap['firstname']] || '');
+  const nom = cl(r[cmap['nom'] || cmap['lastname'] || cmap['name']] || '');
+  if (!prenom && !nom) return null;
+  return { id: uid(), civilite: '', prenom, nom, societe: '',
+    adresse: cl(r[cmap['adresse'] || cmap['address']] || ''),
+    email: cl(r[cmap['email'] || cmap['mail'] || cmap['courriel']] || ''),
+    tel: clTel(r[cmap['telephone'] || cmap['tel'] || cmap['mobile']] || '') };
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  const sep = lines[0].includes(';') ? ';' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
+  const rows = lines.slice(1).map(line => {
+    const vals = line.split(sep).map(v => v.trim().replace(/^"|"$/g, ''));
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = vals[i] || '');
+    return obj;
+  });
+  detectAndParse(rows);
+}
+
+// ══════ DÉTECTION DOUBLONS ══════
+// Doublon = même prénom + même nom (insensible accents/casse)
+function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+function isSame(a, b) { return norm(a.prenom) === norm(b.prenom) && norm(a.nom) === norm(b.nom); }
+
+function classify(incoming, existing) {
+  return incoming.map(nc => ({ ...nc, _status: existing.find(ec => isSame(ec, nc)) ? 'dup' : 'new' }));
+}
+
+// ══════ APERÇU ══════
+function showPreview() {
+  if (!parsed.length) { showErr('Aucun client lisible dans ce fichier.'); return; }
+  const existing = getStored();
+  const classified = classify(parsed, existing);
+  const newCount = classified.filter(c => c._status === 'new').length;
+  const dupCount = classified.filter(c => c._status === 'dup').length;
+  const fmt = parsed._fmt;
+
+  // Format tag
+  const fmtMap = { urssaf: ['fmt-urssaf','📋 Export URSSAF'], gestion: ['fmt-gestion','🖥 Logiciel de gestion'], generic: ['fmt-generic','📄 Format générique'], unknown: ['fmt-generic','⚠️ Format inconnu'] };
+  const [cls, label] = fmtMap[fmt] || fmtMap.generic;
+  document.getElementById('fmt-tag-display').innerHTML = `<span class="fmt-tag ${cls}">${label}</span>`;
+  document.getElementById('file-name-display').textContent = currentFileName;
+
+  // Résumé
+  document.getElementById('import-summary').innerHTML = `
+    <div class="summary-row"><div class="summary-icon">📂</div><div class="summary-label">Clients dans le fichier</div><div class="summary-val">${parsed.length}</div></div>
+    <div class="summary-row"><div class="summary-icon">💾</div><div class="summary-label">Clients déjà enregistrés</div><div class="summary-val">${existing.length}</div></div>
+    <div class="summary-row"><div class="summary-icon">✨</div><div class="summary-label">Nouveaux clients à ajouter</div><div class="summary-val val-green">${newCount}</div></div>
+    <div class="summary-row"><div class="summary-icon">🔁</div><div class="summary-label">Doublons détectés (fiche mise à jour)</div><div class="summary-val val-amber">${dupCount}</div></div>
+    <div class="summary-row" style="background:var(--green-pale);border-radius:8px;padding:10px 8px;margin-top:4px">
+      <div class="summary-icon">🎯</div><div class="summary-label"><strong>Total après import</strong></div><div class="summary-val val-green">${existing.length + newCount}</div></div>`;
+
+  // Table
+  const preview = classified.slice(0, 10);
+  document.getElementById('preview-table').innerHTML = `
+    <thead><tr><th>Statut</th><th>Prénom</th><th>Nom</th><th>Adresse</th><th>Email</th><th>Tél.</th></tr></thead>
+    <tbody>${preview.map(c => `<tr>
+      <td>${c._status === 'new' ? '<span class="tag-new">Nouveau</span>' : '<span class="tag-dup">Existant</span>'}</td>
+      <td>${esc(c.prenom || '—')}</td>
+      <td><strong>${esc(c.nom || '—')}</strong></td>
+      <td>${c.adresse ? '<span class="tag-ok">✓</span>' : '<span class="tag-empty">vide</span>'}</td>
+      <td>${c.email ? '<span class="tag-ok">✓</span>' : '<span class="tag-empty">vide</span>'}</td>
+      <td>${esc(c.tel) || '<span class="tag-empty">vide</span>'}</td>
+    </tr>`).join('')}</tbody>`;
+  document.getElementById('preview-more').textContent = parsed.length > 10 ? `… et ${parsed.length - 10} autres clients non affichés dans l'aperçu` : '';
+
+  show('sec-preview');
+}
+
+// ══════ IMPORT ══════
+function doImport() {
+  const existing = getStored();
+  const classified = classify(parsed, existing);
+  const result = [...existing];
+
+  classified.forEach(nc => {
+    const { _status, ...data } = nc;
+    if (_status === 'dup') {
+      const idx = result.findIndex(ec => isSame(ec, nc));
+      if (idx >= 0) result[idx] = { ...result[idx], ...data, id: result[idx].id };
+    } else {
+      result.push({ ...data, id: uid() });
+    }
+  });
+
+  setStored(result);
+  refreshBanner();
+
+  const newCount = classified.filter(c => c._status === 'new').length;
+  const dupCount = classified.filter(c => c._status === 'dup').length;
+  document.getElementById('result-text').innerHTML =
+    `<strong>${newCount} nouveau${newCount > 1 ? 'x' : ''} client${newCount > 1 ? 's' : ''} ajouté${newCount > 1 ? 's' : ''}</strong>` +
+    (dupCount ? ` · <strong>${dupCount}</strong> fiche${dupCount > 1 ? 's' : ''} mise${dupCount > 1 ? 's' : ''} à jour` : '') +
+    ` — <strong>Total : ${result.length} clients</strong> dans l'application.`;
+
+  show('sec-result');
+}
+
+// ══════ ACTIONS ══════
+function resetUpload() {
+  parsed = [];
+  document.getElementById('file-inp').value = '';
+  document.getElementById('progress-bar').style.width = '0';
+  show('sec-upload');
+}
+
+function importAnother() { resetUpload(); }
+
+function clearAll() {
+  const n = getStored().length;
+  if (!confirm(`Supprimer définitivement les ${n} clients enregistrés ?\n\nCette action est irréversible.`)) return;
+  localStorage.removeItem(STORAGE_KEY);
+  refreshBanner();
+  show('sec-upload');
+  showOk('Liste effacée. Vous pouvez importer un nouveau fichier.');
+}
+
+function downloadBackup() {
+  const list = getStored();
+  const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `clients_backup_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ══════ NAVIGATION ══════
+function show(id) {
+  ['sec-upload','sec-preview','sec-result'].forEach(s =>
+    document.getElementById(s).classList.toggle('show', s === id));
+  window.scrollTo(0, 0);
+}
+
+// ══════ UTILS ══════
+let _uidCounter = 0;
+function uid() { return Date.now() + (++_uidCounter) * 0.001; }
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function showErr(msg) {
+  const d = document.createElement('div');
+  d.className = 'alert alert-err';
+  d.innerHTML = `<div class="alert-icon">❌</div><div>${msg}</div>`;
+  document.querySelector('.container').prepend(d);
+  setTimeout(() => d.remove(), 5000);
+}
+function showOk(msg) {
+  const d = document.createElement('div');
+  d.className = 'alert alert-success';
+  d.innerHTML = `<div class="alert-icon">✅</div><div>${msg}</div>`;
+  document.querySelector('.container').prepend(d);
+  setTimeout(() => d.remove(), 4000);
+}
+</script>
+</body>
+</html>
